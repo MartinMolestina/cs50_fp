@@ -10,8 +10,8 @@ TRACK = scale_image(pygame.image.load("./images/track.png"),0.85)
 TRACK_BORDER = pygame.image.load("./images/track-border.png")
 FINISH = pygame.image.load("./images/finish.png")
 
-ORANGE_CAR = scale_image(pygame.image.load("./images/orange_car.png"),0.02)
-BLUE_CAR = scale_image(pygame.image.load("./images/blue_car.png"),0.02)
+ORANGE_CAR = scale_image(pygame.image.load("./images/orange_car.png"),0.2)
+BLUE_CAR = scale_image(pygame.image.load("./images/blue_car.png"),0.03)
 
 WIDTH, HEIGHT = GRAVEL.get_width(), GRAVEL.get_height()
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -26,15 +26,32 @@ def draw(win, images, player_car):
 	player_car.draw(win)
 	pygame.display.update()
 
+def move_player(player_car):
+	keys = pygame.key.get_pressed()
+	moved = False
+
+	if keys[pygame.K_a]:
+		player_car.rotate(left=True)
+	if keys[pygame.K_d]:
+		player_car.rotate(right=True)
+	if keys[pygame.K_w]:
+		moved = True
+		player_car.move_forward()
+	if keys[pygame.K_s]:
+		moved = True
+		player_car.move_backward()
+	if not moved:
+		player_car.reduce_speed()
+
 class AbstractCar:
 	def __init__(self, max_vel, rotation_vel):
 		self.img = self.IMG
 		self.max_vel = max_vel
 		self.vel = 0
 		self.rotation_vel = rotation_vel
-		self.angle = 90
+		self.angle = 0
 		self.x, self.y = self.START_POS
-		self.acceleration = 0.1
+		self.acceleration = 0.05
 
 	def rotate(self, left=False, right=False):
 		if left:
@@ -49,8 +66,21 @@ class AbstractCar:
 		self.vel = min(self.vel + self.acceleration, self.max_vel)
 		self.move()
 
+	def move_backward(self):
+		self.vel = max(self.vel - self.acceleration*2.5, -self.max_vel/3)
+		self.move()
+
 	def move(self):
-		self.y += self.vel
+		rad = math.radians(self.angle)
+		vertical = math.cos(rad) * self.vel
+		horizontal = math.sin(rad) * self.vel
+
+		self.y -= vertical
+		self.x -= horizontal
+
+	def reduce_speed(self):
+		self.vel = max(self.vel - self.acceleration / 2, 0)
+		self.move()
 
 class PlayerCar(AbstractCar):
 	IMG = BLUE_CAR
@@ -72,13 +102,6 @@ while run:
 			run = False
 			break
 
-	keys = pygame.key.get_pressed()
-
-	if keys[pygame.K_a]:
-		player_car.rotate(left=True)
-	if keys[pygame.K_d]:
-		player_car.rotate(right=True)
-	if keys[pygame.K_w]:
-		player_car.move_forward()
+	move_player(player_car)
 
 pygame.quit()
